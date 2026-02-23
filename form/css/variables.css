@@ -1,0 +1,54 @@
+/**
+ * variables.css
+ * Theme tokens for dark and light modes
+ */
+
+:root {
+  --dk-font: 'Outfit', system-ui, -apple-system, sans-serif;
+  --dk-font-mono: 'Space Mono', 'SF Mono', Consolas, monospace;
+  --dk-accent: #8abeb7;
+
+  --dk-ink: 255,255,255;
+  --dk-bg: #18181e;
+  --dk-glow: rgba(138,190,183,0.06);
+  --dk-surface: #1e1e24;
+  --dk-surface-shimmer: #262630;
+  --dk-elevated: #252530;
+  --dk-elevated-hover: #2b2b37;
+  --dk-text: #b0b0b0;
+  --dk-text-strong: #e0e0e0;
+  --dk-text-label: #c8c8c8;
+  --dk-text-secondary: #808080;
+  --dk-text-aside: #888888;
+  --dk-text-hint: #666666;
+  --dk-text-dim: #555555;
+  --dk-text-placeholder: #404040;
+  --dk-accent-text: #9dcec7;
+  --dk-status-success: #34d399;
+  --dk-status-warn: #f0c674;
+  --dk-status-error: #f87171;
+  --dk-overlay: rgba(24,24,30,0.95);
+}
+
+[data-theme="light"] {
+  --dk-ink: 0,0,0;
+  --dk-bg: #f8f8f8;
+  --dk-glow: rgba(95,135,135,0.08);
+  --dk-surface: #ffffff;
+  --dk-surface-shimmer: #ececec;
+  --dk-elevated: #f0f0f0;
+  --dk-elevated-hover: #e8e8e8;
+  --dk-text: #6c6c6c;
+  --dk-text-strong: #1a1a1a;
+  --dk-text-label: #3a3a3a;
+  --dk-text-secondary: #808080;
+  --dk-text-aside: #7a7a7a;
+  --dk-text-hint: #8a8a8a;
+  --dk-text-dim: #a0a0a0;
+  --dk-text-placeholder: #c8c8c8;
+  --dk-accent-text: #4a7a73;
+  --dk-status-success: #059669;
+  --dk-status-warn: #d97706;
+  --dk-status-error: #af5f5f;
+  --dk-overlay: rgba(255,255,255,0.95);
+}

@@ -1,0 +1,37 @@
+{
+  "name": "pi-design-deck",
+  "version": "0.1.0",
+  "description": "Visual design deck for presenting multi-slide options with high-fidelity previews",
+  "author": "Nico Bailon",
+  "license": "MIT",
+  "main": "index.ts",
+  "files": [
+    "banner.png",
+    "form/",
+    "prompts/",
+    "skills/",
+    "deck-schema.ts",
+    "deck-server.ts",
+    "generate-prompts.ts",
+    "server-utils.ts",
+    "settings.ts",
+    "index.ts"
+  ],
+  "scripts": {
+    "test": "vitest run"
+  },
+  "pi": {
+    "extensions": [
+      "./index.ts"
+    ],
+    "skills": [
+      "./skills"
+    ],
+    "prompts": [
+      "./prompts"
+    ]
+  },
+  "devDependencies": {
+    "vitest": "^4.0.18"
+  }
+}

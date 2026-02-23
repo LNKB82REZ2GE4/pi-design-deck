@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="theme-color" content="#18181e">
+	<title>Design Deck</title>
+	<link rel="preconnect" href="https://fonts.googleapis.com">
+	<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+	<link href="https://fonts.googleapis.com/css2?family=Albert+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Fira+Code:wght@400;500&family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=Outfit:wght@400;500;600;700&family=Space+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+	<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1/themes/prism-tomorrow.min.css">
+	<script src="https://cdn.jsdelivr.net/npm/prismjs@1/prism.min.js"></script>
+	<script src="https://cdn.jsdelivr.net/npm/prismjs@1/plugins/autoloader/prism-autoloader.min.js"></script>
+	<link rel="stylesheet" href="/deck.css">
+</head>
+<body>
+	<div class="deck">
+		<div class="deck-header">
+			<div class="progress"><div class="progress-fill" id="progress-fill" style="width: 0%"></div></div>
+			<div class="deck-meta" id="deck-meta"><h1 class="deck-title" id="deck-title">Design Decisions</h1></div>
+		</div>
+
+		<div class="slides-wrap" id="slides-wrap"></div>
+
+		<!-- Loading overlay - fades out when deck is ready -->
+		<div class="deck-loading" id="deck-loading">
+			<div class="deck-loading-spinner"></div>
+			<div class="deck-loading-text">Loading deck...</div>
+		</div>
+
+		<div class="confirm-bar" id="confirm-bar">
+			<span class="confirm-bar-text">Cancel deck? Selections will be lost.</span>
+			<button class="confirm-bar-btn confirm-bar-cancel" id="confirm-cancel" type="button">Cancel</button>
+			<button class="confirm-bar-btn confirm-bar-keep" id="confirm-keep" type="button">Keep Going</button>
+		</div>
+
+		<div class="deck-close-overlay" id="close-overlay">
+			<div class="close-overlay-content" id="close-overlay-content"></div>
+		</div>
+
+		<div class="deck-footer">
+			<button class="btn-nav" id="btn-back" type="button" disabled>&larr; Back</button>
+			<div class="deck-keys">
+				<span class="deck-key"><kbd>&larr;</kbd><kbd>&rarr;</kbd> Navigate</span>
+				<span class="deck-key"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Select</span>
+				<span class="deck-key"><kbd>Enter</kbd> Confirm</span>
+				<span class="deck-key"><kbd class="mod-key">⌘</kbd><kbd>S</kbd> Save</span>
+				<span class="deck-key hidden" id="theme-shortcut"></span>
+			</div>
+			<button class="btn-nav primary" id="btn-next" type="button">Next &rarr;</button>
+		</div>
+	</div>
+
+	<div id="save-toast" class="save-toast hidden" aria-live="polite"></div>
+
+	<script>
+		window.__DECK_DATA__ = /* __DECK_DATA_PLACEHOLDER__ */;
+	</script>
+	<script src="/deck.js"></script>
+	<script type="module">
+		import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+		window.__mermaid = mermaid;
+		mermaid.initialize({
+			startOnLoad: false,
+			theme: 'base',
+			themeVariables: {
+				background: '#1a1a22',
+				primaryColor: '#2a3f3d',
+				primaryTextColor: '#e0e0e0',
+				primaryBorderColor: '#8abeb7',
+				lineColor: '#555555',
+				secondaryColor: '#1e2a2e',
+				tertiaryColor: '#1a1a22',
+				noteBkgColor: '#222230',
+				noteTextColor: '#b0b0b0',
+				fontSize: '13px',
+				fontFamily: "'Space Mono', monospace",
+			}
+		});
+		window.dispatchEvent(new Event('mermaid-ready'));
+	</script>
+</body>
+</html>
