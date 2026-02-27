@@ -74,7 +74,7 @@ function disableDeckInteractions() {
 	document.querySelectorAll(".btn-gen-more, .btn-regen").forEach((button) => {
 		button.disabled = true;
 	});
-	document.querySelectorAll(".gen-prompt").forEach((input) => {
+	document.querySelectorAll(".gen-prompt, .gen-count").forEach((input) => {
 		input.disabled = true;
 	});
 	document.querySelectorAll(".model-pill, .model-list-item, .model-default-check").forEach((el) => {
@@ -98,7 +98,16 @@ async function submitDeck() {
 	}
 
 	try {
-		await postJson("/submit", { token: sessionToken, selections });
+		// Build notes object with only notes for selected options
+		const notes = {};
+		for (const [slideId, noteData] of Object.entries(optionNotes)) {
+			if (noteData && selections[slideId] === noteData.label && noteData.notes) {
+				notes[slideId] = noteData.notes;
+			}
+		}
+		const payload = { token: sessionToken, selections, notes };
+		if (finalNotes) payload.finalNotes = finalNotes;
+		await postJson("/submit", payload);
 		clearSelectionsStorage();
 		isClosed = true;
 		if (submitButton) {
@@ -242,16 +251,22 @@ function restoreGenerateButton(slideId) {
 	const pending = pendingGenerate.get(slideId);
 	if (!pending || pending.isRegen) return;
 
-	if (pending.skeleton && pending.skeleton.parentElement) {
-		pending.skeleton.remove();
+	// Clear timeout if any
+	if (pending.timeoutId) clearTimeout(pending.timeoutId);
+
+	// Remove all skeletons from DOM (query directly, don't rely on array)
+	const slideElement = document.querySelector(`.slide[data-id="${CSS.escape(slideId)}"]`);
+	if (slideElement) {
+		slideElement.querySelectorAll(".option-skeleton").forEach((skel) => skel.remove());
 	}
+	
 	pending.button.classList.remove("loading");
 	const plus = pending.button.querySelector(".btn-gen-plus");
 	if (plus) plus.textContent = "+";
-	if (pending.button.childNodes[1]) {
-		pending.button.childNodes[1].textContent = pending.originalText;
-	}
+	pending.button.lastChild.textContent = "Generate";
+	
 	if (pending.input && !isClosed) pending.input.disabled = false;
+	if (pending.countSelect && !isClosed) pending.countSelect.disabled = false;
 
 	pendingGenerate.delete(slideId);
 }
@@ -301,6 +316,7 @@ function replaceSlideOptions(slideId, newOptions) {
 	slide.options = newOptions;
 
 	delete selections[slideId];
+	delete optionNotes[slideId];
 	saveSelectionsToStorage();
 
 	const slideElement = document.querySelector(`.slide[data-id="${CSS.escape(slideId)}"]`);
@@ -309,15 +325,27 @@ function replaceSlideOptions(slideId, newOptions) {
 	const optionsGrid = slideElement.querySelector(".options");
 	if (!optionsGrid) return;
 
+	// Remove regeneration overlay and state
+	const overlay = optionsGrid.querySelector(".regen-overlay");
+	if (overlay) overlay.remove();
+	optionsGrid.classList.remove("regenerating");
+	optionsGrid.style.position = "";
+
 	optionsGrid.innerHTML = "";
-	optionsGrid.style.opacity = "";
-	optionsGrid.style.pointerEvents = "";
 	optionsGrid.className = `options ${optionCountClass(newOptions.length, slide.columns)}`;
 
 	newOptions.forEach((option) => {
 		const card = createOptionCard(option, slideId, false);
+		card.classList.add("option-regenerated");
 		optionsGrid.appendChild(card);
 	});
+
+	// Remove animation class after animation completes
+	setTimeout(() => {
+		optionsGrid.querySelectorAll(".option-regenerated").forEach((el) => {
+			el.classList.remove("option-regenerated");
+		});
+	}, 500);
 
 	equalizeBlockHeights(slideElement);
 
@@ -343,9 +371,37 @@ function connectEvents() {
 		if (!payload || typeof payload.slideId !== "string" || !payload.option) {
 			return;
 		}
-		const model = pendingGenerate.get(payload.slideId)?.model || null;
-		restoreGenerateButton(payload.slideId);
+		const pending = pendingGenerate.get(payload.slideId);
+		const model = pending?.model || null;
+		
+		// Remove one skeleton
+		if (pending?.skeletons?.length > 0) {
+			const skel = pending.skeletons.shift();
+			if (skel.parentElement) skel.remove();
+		}
+		
 		insertGeneratedOption(payload.slideId, payload.option, model);
+		
+		// Track received count and restore button when all received
+		if (pending) {
+			pending.receivedCount = (pending.receivedCount || 0) + 1;
+			if (pending.receivedCount >= (pending.expectedCount || 1)) {
+				restoreGenerateButton(payload.slideId);
+			} else {
+				// Reset timeout for next option
+				if (pending.timeoutId) clearTimeout(pending.timeoutId);
+				pending.timeoutId = setTimeout(() => {
+					const current = pendingGenerate.get(payload.slideId);
+					if (!current || current.isRegen) return;
+					const received = current.receivedCount || 0;
+					const expected = current.expectedCount || 1;
+					restoreGenerateButton(payload.slideId);
+					if (received < expected) {
+						showSaveToast(`Generated ${received} of ${expected} options`, true);
+					}
+				}, 30000);
+			}
+		}
 	});
 
 	events.addEventListener("generate-failed", (event) => {
@@ -359,6 +415,8 @@ function connectEvents() {
 			restoreGenerateButton(payload.slideId);
 			if (payload.reason === "timeout") {
 				showSaveToast("Generation timed out — try again", true);
+			} else {
+				showSaveToast("Generation failed", true);
 			}
 		}
 	});
@@ -388,6 +446,8 @@ function connectEvents() {
 			restoreRegenButton(payload.slideId);
 			if (payload.reason === "timeout") {
 				showSaveToast("Regeneration timed out — try again", true);
+			} else {
+				showSaveToast("Regeneration failed", true);
 			}
 		}
 	});
@@ -415,7 +475,7 @@ function connectEvents() {
 	});
 }
 
-async function generateMore(button, slideId, input) {
+async function generateMore(button, slideId, input, countSelect) {
 	if (isClosed || pendingGenerate.size > 0) return;
 
 	const slideElement = document.querySelector(`.slide[data-id="${CSS.escape(slideId)}"]`);
@@ -428,21 +488,42 @@ async function generateMore(button, slideId, input) {
 
 	const prompt = input ? input.value.trim() : "";
 	if (input) input.value = "";
+	
+	const count = countSelect ? parseInt(countSelect.value, 10) || 1 : 1;
 
-	const skeleton = createElement("div", "option-skeleton");
-	optionsGrid.appendChild(skeleton);
+	// Create skeletons for each option being generated
+	const skeletons = [];
+	for (let i = 0; i < count; i++) {
+		const skeleton = createElement("div", "option-skeleton");
+		optionsGrid.appendChild(skeleton);
+		skeletons.push(skeleton);
+	}
 
-	const originalText = button.childNodes[1] ? button.childNodes[1].textContent || "" : "";
 	button.classList.add("loading");
 	const plus = button.querySelector(".btn-gen-plus");
 	if (plus) plus.textContent = "";
-	if (button.childNodes[1]) button.childNodes[1].textContent = " Generating...";
+	button.lastChild.textContent = "Generating...";
 	if (input) input.disabled = true;
+	if (countSelect) countSelect.disabled = true;
 
-	pendingGenerate.set(slideId, { button, skeleton, originalText, input, model: selectedModel || null });
+	// Set timeout for generation (30s per option)
+	const timeoutId = setTimeout(() => {
+		const pending = pendingGenerate.get(slideId);
+		if (pending && !pending.isRegen) {
+			const received = pending.receivedCount || 0;
+			restoreGenerateButton(slideId);
+			if (received === 0) {
+				showSaveToast("Generation timed out — try again", true);
+			} else {
+				showSaveToast(`Generated ${received} of ${count} options`, true);
+			}
+		}
+	}, 30000 * count);
+
+	pendingGenerate.set(slideId, { button, skeletons, input, countSelect, model: selectedModel || null, expectedCount: count, receivedCount: 0, timeoutId });
 
 	try {
-		const body = { token: sessionToken, slideId };
+		const body = { token: sessionToken, slideId, count };
 		if (prompt) body.prompt = prompt;
 		if (hasModelBar) {
 			body.model = selectedModel;
@@ -470,8 +551,21 @@ async function regenerateSlide(button, slideId) {
 	const prompt = input ? input.value.trim() : "";
 	if (input) input.value = "";
 
-	optionsGrid.style.opacity = "0.4";
-	optionsGrid.style.pointerEvents = "none";
+	// Create skeleton overlay
+	const optionCount = slide.options?.length || 2;
+	const colClass = optionsGrid.classList.contains("cols-3") ? "cols-3" :
+	                 optionsGrid.classList.contains("cols-1") ? "cols-1" : "cols-2";
+	const overlay = createElement("div", `regen-overlay ${colClass}`);
+	for (let i = 0; i < optionCount; i++) {
+		overlay.appendChild(createElement("div", "regen-skeleton"));
+	}
+	const status = createElement("div", "regen-status", "Regenerating options...");
+	overlay.appendChild(status);
+
+	// Position overlay relative to options grid
+	optionsGrid.style.position = "relative";
+	optionsGrid.classList.add("regenerating");
+	optionsGrid.appendChild(overlay);
 
 	const originalText = button.textContent || "";
 	button.classList.add("loading");
@@ -482,7 +576,7 @@ async function regenerateSlide(button, slideId) {
 	const genMoreBtn = slideElement.querySelector(".btn-gen-more");
 	if (genMoreBtn) genMoreBtn.disabled = true;
 
-	pendingGenerate.set(slideId, { button, originalText, input, isRegen: true, optionsGrid, genMoreBtn });
+	pendingGenerate.set(slideId, { button, originalText, input, isRegen: true, optionsGrid, genMoreBtn, overlay });
 
 	try {
 		const body = { token: sessionToken, slideId };
@@ -502,7 +596,7 @@ function restoreRegenButton(slideId) {
 	if (!pending || !pending.isRegen) return;
 	pendingGenerate.delete(slideId);
 
-	const { button, originalText, input, optionsGrid, genMoreBtn } = pending;
+	const { button, originalText, input, optionsGrid, genMoreBtn, overlay } = pending;
 	if (button) {
 		button.classList.remove("loading");
 		button.disabled = false;
@@ -510,8 +604,11 @@ function restoreRegenButton(slideId) {
 	}
 	if (input) input.disabled = false;
 	if (optionsGrid) {
-		optionsGrid.style.opacity = "";
-		optionsGrid.style.pointerEvents = "";
+		optionsGrid.classList.remove("regenerating");
+		optionsGrid.style.position = "";
+	}
+	if (overlay && overlay.parentElement) {
+		overlay.remove();
 	}
 	if (genMoreBtn) genMoreBtn.disabled = false;
 }

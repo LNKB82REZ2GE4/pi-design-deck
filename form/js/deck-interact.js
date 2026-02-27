@@ -1,8 +1,8 @@
 // ─── SELECTION ───────────────────────────────────────────────
 
-function applySavedSelections(saved) {
-	if (!saved || typeof saved !== "object") return;
-	for (const [slideId, label] of Object.entries(saved)) {
+function applySavedSelections(savedSelections, savedNotes) {
+	if (!savedSelections || typeof savedSelections !== "object") return;
+	for (const [slideId, label] of Object.entries(savedSelections)) {
 		if (typeof label !== "string") continue;
 		const slideEl = document.querySelector(`.slide[data-id="${CSS.escape(slideId)}"]`);
 		if (!slideEl) continue;
@@ -13,16 +13,35 @@ function applySavedSelections(saved) {
 			}
 		}
 	}
+	// Restore notes
+	if (savedNotes && typeof savedNotes === "object") {
+		for (const [slideId, noteData] of Object.entries(savedNotes)) {
+			if (noteData && typeof noteData === "object" && noteData.label && noteData.notes) {
+				optionNotes[slideId] = noteData;
+				// Find and populate the textarea
+				const input = document.querySelector(`.option-notes-input[data-slide-id="${CSS.escape(slideId)}"][data-option-label="${CSS.escape(noteData.label)}"]`);
+				if (input) input.value = noteData.notes;
+			}
+		}
+	}
 }
 
 function restoreSelections() {
 	const serverSaved = deckData.savedSelections;
 	if (serverSaved && typeof serverSaved === "object" && Object.keys(serverSaved).length > 0) {
-		applySavedSelections(serverSaved);
+		applySavedSelections(serverSaved, null);
 		return;
 	}
 	const stored = loadSelectionsFromStorage();
-	if (stored) applySavedSelections(stored);
+	if (stored) {
+		applySavedSelections(stored.selections || stored, stored.optionNotes);
+		// Restore final notes if present
+		if (stored.finalNotes) {
+			finalNotes = stored.finalNotes;
+			const input = document.getElementById("final-notes-input");
+			if (input) input.value = stored.finalNotes;
+		}
+	}
 }
 
 function applySelectionClasses(slideElement, selectedElement) {
@@ -337,7 +356,8 @@ function initModelBar(modelsData) {
 	}
 
 	function syncDefaultCheck() {
-		defaultCheck.checked = modelsData.defaultModel != null && selectedModel === modelsData.defaultModel;
+		const effectiveModel = selectedModel || modelsData.current;
+		defaultCheck.checked = modelsData.defaultModel != null && effectiveModel === modelsData.defaultModel;
 	}
 
 	function activateProvider(provider) {
@@ -369,12 +389,18 @@ function initModelBar(modelsData) {
 	});
 
 	defaultCheck.addEventListener("change", async () => {
-		if (defaultCheck.checked && !selectedModel) { defaultCheck.checked = false; return; }
-		const model = defaultCheck.checked ? selectedModel : null;
+		// Use selectedModel, or fall back to current model when on "Current" pill
+		const modelToSave = selectedModel || modelsData.current;
+		if (defaultCheck.checked && !modelToSave) { defaultCheck.checked = false; return; }
+		const model = defaultCheck.checked ? modelToSave : null;
 		try {
 			await postJson("/save-model-default", { token: sessionToken, model });
 			modelsData.defaultModel = model;
-		} catch {}
+		} catch (err) {
+			console.error("Failed to save default model:", err);
+			// Revert checkbox to match actual state
+			syncDefaultCheck();
+		}
 	});
 
 	if (modelsData.defaultModel) {

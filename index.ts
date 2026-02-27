@@ -42,6 +42,8 @@ interface DeckDetails {
 	status: "completed" | "cancelled" | "generate-more" | "aborted" | "error";
 	url: string;
 	selections?: Record<string, string>;
+	notes?: Record<string, string>;
+	finalNotes?: string;
 	slideId?: string;
 	reason?: string;
 }
@@ -118,7 +120,7 @@ function clearDeckIdleTimer(): void {
 	}
 }
 
-function cleanupActiveDeck(): void {
+function cleanupActiveDeck(reason?: string): void {
 	clearDeckIdleTimer();
 	if (restoreDeckThinking) {
 		restoreDeckThinking();
@@ -126,20 +128,23 @@ function cleanupActiveDeck(): void {
 	}
 	if (!activeDeckServer) return;
 	try {
-		activeDeckServer.handle.close();
+		activeDeckServer.handle.close(reason);
 	} catch {}
 	activeDeckServer = null;
 }
 
 function cleanupActiveDeckAndStoreResult(result: DeckToolResult): void {
 	if (!activeDeckServer) return;
+	// Extract close reason from result details
+	const details = result.details as DeckDetails | undefined;
+	const closeReason = details?.status === "aborted" ? "aborted" : details?.reason;
 	if (activeDeckServer.currentResolve) {
 		const resolve = activeDeckServer.currentResolve;
-		cleanupActiveDeck();
+		cleanupActiveDeck(closeReason);
 		resolve(result);
 	} else {
 		pendingDeckResult = result;
-		cleanupActiveDeck();
+		cleanupActiveDeck(closeReason);
 	}
 }
 
@@ -181,10 +186,16 @@ function attachDeckAbortHandler(signal: AbortSignal | undefined): void {
 	signal.addEventListener("abort", abortHandler, { once: true });
 }
 
-function formatDeckSelections(selections: Record<string, string>): string {
+function formatDeckSelections(selections: Record<string, string>, notes?: Record<string, string>): string {
 	const entries = Object.entries(selections);
 	if (entries.length === 0) return "(none)";
-	return entries.map(([key, value]) => `- ${key}: ${value}`).join("\n");
+	return entries.map(([key, value]) => {
+		const note = notes?.[key];
+		if (note) {
+			return `- ${key}: ${value}\n  Notes: ${note}`;
+		}
+		return `- ${key}: ${value}`;
+	}).join("\n");
 }
 
 export default function (pi: ExtensionAPI) {
@@ -274,17 +285,8 @@ export default function (pi: ExtensionAPI) {
 					};
 				}
 
-				if (activeDeckServer.currentResolve !== null) {
-					return {
-						content: [
-							{
-								type: "text",
-								text: "Design deck is not waiting for a generated option right now.",
-							},
-						],
-						details: { status: "error", url: activeDeckServer.handle.url },
-					};
-				}
+				// Note: We don't check currentResolve here because multiple parallel
+				// add-option calls are valid (e.g., user requests 3 options at once)
 
 				const slideId = p.slideId as string;
 				const option = p.option as string;
@@ -320,14 +322,14 @@ export default function (pi: ExtensionAPI) {
 					};
 				}
 
-				if (onUpdate) {
-					onUpdate({
-						content: [{ type: "text", text: `Pushed new option to slide ${slideId}.` }],
-						details: { status: "generate-more", url: activeDeckServer.handle.url, slideId },
-					});
-				}
-				attachDeckAbortHandler(signal);
-				return blockOnDeck();
+				// For add-option, return immediately without blocking.
+				// This allows parallel add-option calls to all succeed.
+				// The deck stays open and will send a new prompt when the user
+				// clicks generate-more again or submits.
+				return {
+					content: [{ type: "text", text: `Pushed option "${parsedOption.label}" to slide ${slideId}.` }],
+					details: { status: "generate-more", url: activeDeckServer.handle.url, slideId },
+				};
 			}
 
 			if (p.action === "replace-options") {
@@ -472,17 +474,28 @@ export default function (pi: ExtensionAPI) {
 				};
 			}
 
-			const handleSubmit = (selections: Record<string, string>) => {
+			const handleSubmit = (selections: Record<string, string>, notes?: Record<string, string>, finalNotes?: string) => {
 				if (!activeDeckServer) return;
 				const url = activeDeckServer.handle.url;
+				const hasNotes = notes && Object.keys(notes).length > 0;
+				const textParts = [`Design deck completed.\n\nSelections:\n${formatDeckSelections(selections, notes)}`];
+				if (finalNotes) {
+					textParts.push(`\nAdditional instructions:\n${finalNotes}`);
+				}
 				cleanupActiveDeckAndStoreResult({
 					content: [
 						{
 							type: "text",
-							text: `Design deck completed.\n\nSelections:\n${formatDeckSelections(selections)}`,
+							text: textParts.join(""),
 						},
 					],
-					details: { status: "completed", url, selections },
+					details: { 
+						status: "completed", 
+						url, 
+						selections, 
+						...(hasNotes ? { notes } : {}),
+						...(finalNotes ? { finalNotes } : {}),
+					},
 				});
 			};
 
@@ -503,8 +516,12 @@ export default function (pi: ExtensionAPI) {
 				});
 			};
 
-			const handleGenerateMore = (slideId: string, prompt?: string, model?: string, thinking?: string) => {
-				if (!activeDeckServer?.currentResolve) return;
+			const handleGenerateMore = (slideId: string, prompt?: string, model?: string, thinking?: string, count?: number) => {
+				if (!activeDeckServer?.currentResolve) {
+					// Agent is no longer listening - close the deck
+					cleanupActiveDeck("stale");
+					return;
+				}
 				const resolve = activeDeckServer.currentResolve;
 				activeDeckServer.currentResolve = null;
 				armDeckIdleTimer();
@@ -513,8 +530,9 @@ export default function (pi: ExtensionAPI) {
 				if (thinking && !effectiveModel) {
 					pi.setThinkingLevel(thinking as "off" | "minimal" | "low" | "medium" | "high" | "xhigh");
 				}
+				const effectiveCount = count && count >= 1 && count <= 5 ? count : 1;
 				resolve({
-					content: [{ type: "text", text: buildGenerateMoreResult(slideId, slide, prompt, effectiveModel, thinking) }],
+					content: [{ type: "text", text: buildGenerateMoreResult(slideId, slide, prompt, effectiveModel, thinking, effectiveCount) }],
 					details: {
 						status: "generate-more",
 						url: activeDeckServer.handle.url,
@@ -524,7 +542,11 @@ export default function (pi: ExtensionAPI) {
 			};
 
 			const handleRegenerateSlide = (slideId: string, prompt?: string, model?: string, thinking?: string) => {
-				if (!activeDeckServer?.currentResolve) return;
+				if (!activeDeckServer?.currentResolve) {
+					// Agent is no longer listening - close the deck
+					cleanupActiveDeck("stale");
+					return;
+				}
 				const resolve = activeDeckServer.currentResolve;
 				activeDeckServer.currentResolve = null;
 				armDeckIdleTimer();

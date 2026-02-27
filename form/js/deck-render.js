@@ -114,6 +114,10 @@ function applyPreviewHtml(preview, previewHtml) {
 		if (dataset.fonts) {
 			preview.dataset.fonts = dataset.fonts;
 		}
+		// Copy inline styles from source preview div
+		if (first.style.cssText) {
+			preview.style.cssText = first.style.cssText;
+		}
 		preview.innerHTML = first.innerHTML;
 		return;
 	}
@@ -186,11 +190,47 @@ function createOptionCard(option, slideId, generatedBy) {
 		el.tabIndex = -1;
 	});
 
+	// Footer contains aside (optional) + notes input
+	const footer = createElement("div", "option-footer");
+
 	if (option.aside) {
 		const aside = createElement("div", "option-aside");
-		aside.innerHTML = escapeHtml(option.aside).replace(/\n/g, "<br>");
-		card.appendChild(aside);
+		// Handle both actual newlines and literal \n sequences
+		aside.innerHTML = escapeHtml(option.aside).replace(/\\n/g, "<br>").replace(/\n/g, "<br>");
+		footer.appendChild(aside);
 	}
+
+	// Notes input for user instructions
+	const notesContainer = createElement("div", "option-notes");
+	const notesLabel = createElement("label", "option-notes-label", "Your notes (optional)");
+	const notesInput = createElement("textarea", "option-notes-input");
+	notesInput.placeholder = "Add notes...";
+	notesInput.rows = 1;
+	notesInput.dataset.slideId = slideId;
+	notesInput.dataset.optionLabel = option.label;
+	
+	// Restore saved notes if this option was previously selected with notes
+	if (optionNotes[slideId]?.label === option.label && optionNotes[slideId]?.notes) {
+		notesInput.value = optionNotes[slideId].notes;
+	}
+	
+	notesInput.addEventListener("input", (e) => {
+		const value = e.target.value.trim();
+		if (value) {
+			optionNotes[slideId] = { label: option.label, notes: value };
+		} else if (optionNotes[slideId]?.label === option.label) {
+			delete optionNotes[slideId];
+		}
+		saveSelectionsToStorage();
+	});
+	
+	// Prevent click from bubbling to card (which would select it)
+	notesInput.addEventListener("click", (e) => e.stopPropagation());
+	
+	notesContainer.appendChild(notesLabel);
+	notesContainer.appendChild(notesInput);
+	footer.appendChild(notesContainer);
+	card.appendChild(footer);
 
 	if (option.description) {
 		card.setAttribute("title", option.description);
@@ -207,10 +247,33 @@ function createGenerateBar(slideId) {
 	const bar = createElement("div", "gen-bar");
 
 	const row = createElement("div", "gen-row");
+	
+	// Generate button with separate count selector
+	const genGroup = createElement("div", "gen-group");
 	const button = createElement("button", "btn-gen-more");
 	button.type = "button";
 	button.appendChild(createElement("span", "btn-gen-plus", "+"));
-	button.appendChild(document.createTextNode(" Generate another option"));
+	button.appendChild(document.createTextNode("Generate"));
+	
+	const countSelect = document.createElement("select");
+	countSelect.className = "gen-count";
+	countSelect.setAttribute("aria-label", "Number of options to generate");
+	[1, 2, 3].forEach((n) => {
+		const opt = document.createElement("option");
+		opt.value = n;
+		opt.textContent = n;
+		countSelect.appendChild(opt);
+	});
+	
+	const countLabel = createElement("span", "gen-count-label", "option");
+	countSelect.addEventListener("change", () => {
+		const count = parseInt(countSelect.value, 10);
+		countLabel.textContent = count === 1 ? "option" : "options";
+	});
+	
+	genGroup.appendChild(button);
+	genGroup.appendChild(countSelect);
+	genGroup.appendChild(countLabel);
 
 	const regenButton = createElement("button", "btn-regen");
 	regenButton.type = "button";
@@ -231,8 +294,8 @@ function createGenerateBar(slideId) {
 		e.stopPropagation();
 	});
 
-	button.addEventListener("click", () => generateMore(button, slideId, input));
-	row.appendChild(button);
+	button.addEventListener("click", () => generateMore(button, slideId, input, countSelect));
+	row.appendChild(genGroup);
 	row.appendChild(regenButton);
 	row.appendChild(input);
 	bar.appendChild(row);
@@ -300,6 +363,22 @@ function createSummarySlide(index) {
 	const summaryGrid = createElement("div", "summary-grid");
 	summaryGrid.id = "summary-grid";
 	section.appendChild(summaryGrid);
+
+	// Final instructions textarea
+	const finalNotesContainer = createElement("div", "final-notes");
+	const finalNotesLabel = createElement("label", "final-notes-label", "Additional instructions (optional)");
+	finalNotesLabel.setAttribute("for", "final-notes-input");
+	const finalNotesInput = createElement("textarea", "final-notes-input");
+	finalNotesInput.id = "final-notes-input";
+	finalNotesInput.placeholder = "Add any final notes or instructions for implementation...";
+	finalNotesInput.rows = 2;
+	finalNotesInput.addEventListener("input", (e) => {
+		finalNotes = e.target.value.trim();
+		saveSelectionsToStorage();
+	});
+	finalNotesContainer.appendChild(finalNotesLabel);
+	finalNotesContainer.appendChild(finalNotesInput);
+	section.appendChild(finalNotesContainer);
 
 	const submitButton = createElement("button", "btn-generate", "Submit Selections");
 	submitButton.type = "button";
@@ -382,9 +461,17 @@ function createSummaryCard(slide) {
 				const text = selectedOption.aside.length > 120
 					? selectedOption.aside.slice(0, 120).trimEnd() + "..."
 					: selectedOption.aside;
-				aside.textContent = text;
+				aside.innerHTML = escapeHtml(text).replace(/\\n/g, "<br>").replace(/\n/g, "<br>");
 				card.appendChild(aside);
 			}
+		}
+
+		// Show user notes if present
+		const noteData = optionNotes[slide.id];
+		if (noteData && noteData.label === selectedLabel && noteData.notes) {
+			const notesDisplay = createElement("div", "summary-notes");
+			notesDisplay.innerHTML = `<span class="summary-notes-label">Your notes:</span> ${escapeHtml(noteData.notes)}`;
+			card.appendChild(notesDisplay);
 		}
 	}
 

@@ -173,16 +173,16 @@ export interface DeckServerOptions {
 }
 
 export interface DeckServerCallbacks {
-	onSubmit: (selections: Record<string, string>) => void;
+	onSubmit: (selections: Record<string, string>, notes?: Record<string, string>, finalNotes?: string) => void;
 	onCancel: (reason?: "user" | "stale" | "aborted") => void;
-	onGenerateMore: (slideId: string, prompt?: string, model?: string, thinking?: string) => void;
+	onGenerateMore: (slideId: string, prompt?: string, model?: string, thinking?: string, count?: number) => void;
 	onRegenerateSlide: (slideId: string, prompt?: string, model?: string, thinking?: string) => void;
 }
 
 export interface DeckServerHandle {
 	url: string;
 	port: number;
-	close: () => void;
+	close: (reason?: string) => void;
 	pushOption: (slideId: string, option: DeckOption) => void;
 	cancelGenerate: () => void;
 	replaceSlideOptions: (slideId: string, options: DeckOption[]) => void;
@@ -414,12 +414,14 @@ export async function startDeckServer(
 					return;
 				}
 
-				const payload = body as { selections?: unknown };
+				const payload = body as { selections?: unknown; notes?: unknown; finalNotes?: unknown };
 				const selections = toStringMap(payload.selections);
 				if (!selections) {
 					sendJson(res, 400, { ok: false, error: "Invalid selections payload" });
 					return;
 				}
+				const notes = toStringMap(payload.notes) ?? undefined;
+				const finalNotes = typeof payload.finalNotes === "string" ? payload.finalNotes.trim() : undefined;
 
 				touchHeartbeat();
 				if (autoSaveOnSubmit !== false) {
@@ -431,7 +433,7 @@ export async function startDeckServer(
 				unregisterSession(sessionId);
 				pushEvent("deck-close", { reason: "submitted" });
 				sendJson(res, 200, { ok: true });
-				setImmediate(() => callbacks.onSubmit(selections));
+				setImmediate(() => callbacks.onSubmit(selections, notes, finalNotes || undefined));
 				return;
 			}
 
@@ -492,7 +494,7 @@ export async function startDeckServer(
 					return;
 				}
 
-				const payload = body as { slideId?: string; prompt?: string; model?: string; thinking?: string };
+				const payload = body as { slideId?: string; prompt?: string; model?: string; thinking?: string; count?: number };
 				if (typeof payload.slideId !== "string" || payload.slideId.trim() === "") {
 					sendJson(res, 400, { ok: false, error: "slideId is required" });
 					return;
@@ -509,12 +511,13 @@ export async function startDeckServer(
 				const prompt = typeof payload.prompt === "string" ? payload.prompt.trim() || undefined : undefined;
 				const model = typeof payload.model === "string" ? (payload.model.trim() || "") : undefined;
 				const thinking = typeof payload.thinking === "string" ? payload.thinking.trim() || undefined : undefined;
+				const count = typeof payload.count === "number" && payload.count >= 1 && payload.count <= 5 ? payload.count : 1;
 
 				setPendingGenerate(payload.slideId as string, false);
 				touchHeartbeat();
 				sendJson(res, 200, { ok: true });
 				setImmediate(() => {
-					callbacks.onGenerateMore(payload.slideId as string, prompt, model, thinking);
+					callbacks.onGenerateMore(payload.slideId as string, prompt, model, thinking, count);
 				});
 				return;
 			}
@@ -603,11 +606,11 @@ export async function startDeckServer(
 			resolve({
 				url,
 				port: addr.port,
-				close: () => {
+				close: (reason?: string) => {
 					if (!completed) {
 						markCompleted();
 						unregisterSession(sessionId);
-						pushEvent("deck-close", { reason: "closed" });
+						pushEvent("deck-close", { reason: reason || "closed" });
 					}
 					try {
 						server.close();

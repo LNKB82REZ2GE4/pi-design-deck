@@ -2,6 +2,32 @@
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-02-27
+
+### Added
+- **Generate multiple options at once**: Dropdown to select 1, 2, or 3 options. Agent makes parallel add-option calls.
+- **Per-option notes**: Each option card has an optional "Your notes" textarea. Notes are included in submission.
+- **Final instructions**: Summary slide has "Additional instructions" textarea for implementation guidance.
+
+### Changed
+- **Stronger generate-more prompts**: Instructions now explicitly state "YOU MUST" generate options, warning against skipping.
+- **`close()` accepts reason parameter**: Server handle's `close()` method accepts optional reason string for different browser messages.
+- **Improved regenerate-all transition**: Skeleton overlay with shimmer animation covers existing options during regeneration.
+
+### Fixed
+- **Parallel add-option calls**: Fixed bug where only the first of multiple parallel calls succeeded. Now returns immediately without blocking.
+- **Partial generation timeout**: 30-second timeout per option with "Generated X of Y" toast if fewer arrive than requested.
+- **Deck closes when agent disconnects**: Now shows "Session ended — lost connection" instead of leaving deck unresponsive.
+- **Default checkbox on "Current" pill**: Can now set current model as default without reselecting from provider list.
+- **Default checkbox error handling**: API errors are logged and checkbox reverts to actual state.
+- **Summary slide aside line breaks**: Now correctly renders `\n` as line breaks, matching option cards.
+- **Preview inline styles preserved**: `previewHtml` wrapper div inline styles are now correctly applied.
+- **Skeleton cleanup**: Queries DOM directly instead of relying on mutated array.
+- **Silent generation failures**: Browser shows toast for all failure cases, not just timeouts.
+- **Abort shows correct message**: Shows "Session was ended by the agent" instead of generic message.
+- **Notes persisted across refresh**: Option notes and final instructions saved to localStorage.
+- **Stale notes cleared on regeneration**: Old notes cleared to prevent appearing on new options.
+
 ## [0.1.1] - 2026-02-23
 
 ### Added

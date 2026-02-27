@@ -23,6 +23,8 @@ let isClosed = false;
 let isSubmitting = false;
 
 const selections = {};
+const optionNotes = {};
+let finalNotes = "";
 const pendingGenerate = new Map();
 let selectedModel = "";
 let selectedThinking = "off";
@@ -184,13 +186,23 @@ function initTheme() {
 const SELECTIONS_KEY = `pi-deck-${typeof deckData.sessionId === "string" ? deckData.sessionId : "unknown"}`;
 
 function saveSelectionsToStorage() {
-	try { localStorage.setItem(SELECTIONS_KEY, JSON.stringify(selections)); } catch {}
+	try { 
+		const data = { selections, optionNotes };
+		if (finalNotes) data.finalNotes = finalNotes;
+		localStorage.setItem(SELECTIONS_KEY, JSON.stringify(data)); 
+	} catch {}
 }
 
 function loadSelectionsFromStorage() {
 	try {
 		const saved = localStorage.getItem(SELECTIONS_KEY);
-		return saved ? JSON.parse(saved) : null;
+		if (!saved) return null;
+		const parsed = JSON.parse(saved);
+		// Handle both old format (just selections) and new format ({ selections, optionNotes })
+		if (parsed && typeof parsed === "object" && !parsed.selections) {
+			return { selections: parsed, optionNotes: {} };
+		}
+		return parsed;
 	} catch { return null; }
 }
 
