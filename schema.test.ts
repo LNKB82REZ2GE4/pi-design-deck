@@ -267,13 +267,14 @@ describe("validateDeckConfig", () => {
 			expect(config.slides[0].columns).toBe(3);
 		});
 
-		it("rejects columns: 4", () => {
-			expect(() => validateDeckConfig({
+		it("accepts columns: 4", () => {
+			const config = validateDeckConfig({
 				slides: [{
 					id: "s1", title: "T", columns: 4,
 					options: [{ label: "A", previewHtml: "<div>A</div>" }],
 				}],
-			})).toThrow("columns must be 1, 2, or 3");
+			});
+			expect(config.slides[0].columns).toBe(4);
 		});
 
 		it("rejects columns: 0", () => {
@@ -282,7 +283,7 @@ describe("validateDeckConfig", () => {
 					id: "s1", title: "T", columns: 0,
 					options: [{ label: "A", previewHtml: "<div>A</div>" }],
 				}],
-			})).toThrow("columns must be 1, 2, or 3");
+			})).toThrow("columns must be 1, 2, 3, or 4");
 		});
 
 		it("accepts omitted columns (auto-detect)", () => {

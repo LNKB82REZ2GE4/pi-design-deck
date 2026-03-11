@@ -88,7 +88,7 @@ const DeckParams = Type.Object(
 		slides: Type.Optional(
 			Type.String({
 				description:
-					"JSON string of deck config. Each slide has id, title, context?, columns? (1|2|3, omit for auto-layout), and options[]. " +
+					"JSON string of deck config. Each slide has id, title, context?, columns? (1|2|3|4, omit for auto-layout), and options[]. " +
 					"Each option has label, description?, aside?, recommended?, and either previewHtml (raw HTML string) or " +
 					"previewBlocks (array of typed blocks: {type:'html',content}, {type:'mermaid',content,theme?}, " +
 					"{type:'code',code,lang}, {type:'image',src,alt,caption?}). Exactly one of previewHtml or previewBlocks required per option.",

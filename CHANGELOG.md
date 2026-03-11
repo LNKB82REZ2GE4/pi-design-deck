@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1] - 2026-03-10
+
+### Added
+- **Loading spinners**: Generate-more shows spinner inside skeleton cards; regenerate-all shows centered spinner overlay with backdrop blur and "Regenerating options..." text.
+- **Layout toggle**: Footer toolbar with 1/2/3/4 column buttons. Overrides per-slide column settings globally. Click active button to return to auto-layout. Persists to localStorage.
+- **4-column layout**: Agents can now set `columns: 4` per slide for compact grids (icon sets, color swatches, etc.).
+
 ## [0.3.0] - 2026-03-02
 
 ### Added

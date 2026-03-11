@@ -44,6 +44,20 @@
 				<span class="deck-key"><kbd>&larr;</kbd><kbd>&rarr;</kbd> Navigate</span>
 				<span class="deck-key"><kbd>1</kbd><kbd>2</kbd><kbd>3</kbd> Select</span>
 				<span class="deck-key"><kbd>Enter</kbd> Confirm</span>
+				<div class="layout-toggle" id="layout-toggle" role="toolbar" aria-label="Grid columns">
+					<button class="layout-btn" data-cols="1" type="button" title="1 column" aria-label="1 column" aria-pressed="false">
+						<svg viewBox="0 0 12 12"><rect x="3" y="1" width="6" height="10" rx="1" fill="currentColor"/></svg>
+					</button>
+					<button class="layout-btn" data-cols="2" type="button" title="2 columns" aria-label="2 columns" aria-pressed="false">
+						<svg viewBox="0 0 12 12"><rect x="1" y="1" width="4" height="10" rx="0.75" fill="currentColor"/><rect x="7" y="1" width="4" height="10" rx="0.75" fill="currentColor"/></svg>
+					</button>
+					<button class="layout-btn" data-cols="3" type="button" title="3 columns" aria-label="3 columns" aria-pressed="false">
+						<svg viewBox="0 0 12 12"><rect x="0.5" y="1" width="3" height="10" rx="0.5" fill="currentColor"/><rect x="4.5" y="1" width="3" height="10" rx="0.5" fill="currentColor"/><rect x="8.5" y="1" width="3" height="10" rx="0.5" fill="currentColor"/></svg>
+					</button>
+					<button class="layout-btn" data-cols="4" type="button" title="4 columns" aria-label="4 columns" aria-pressed="false">
+						<svg viewBox="0 0 12 12"><rect x="0" y="1" width="2.4" height="10" rx="0.5" fill="currentColor"/><rect x="3.2" y="1" width="2.4" height="10" rx="0.5" fill="currentColor"/><rect x="6.4" y="1" width="2.4" height="10" rx="0.5" fill="currentColor"/><rect x="9.6" y="1" width="2.4" height="10" rx="0.5" fill="currentColor"/></svg>
+					</button>
+				</div>
 				<span class="deck-key"><kbd class="mod-key">⌘</kbd><kbd>S</kbd> Save</span>
 				<button class="deck-save-btn" id="btn-save" type="button">Save</button>
 				<span class="deck-save-status" id="save-status" role="status" aria-live="polite">No unsaved changes</span>

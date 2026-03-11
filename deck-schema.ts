@@ -17,7 +17,7 @@ export interface DeckSlide {
 	id: string;
 	title: string;
 	context?: string;
-	columns?: 1 | 2 | 3;
+	columns?: 1 | 2 | 3 | 4;
 	options: DeckOption[];
 }
 
@@ -155,8 +155,8 @@ function validateDeckSlide(slide: unknown, index: number): DeckSlide {
 	}
 
 	if (obj.columns !== undefined) {
-		if (obj.columns !== 1 && obj.columns !== 2 && obj.columns !== 3) {
-			throw new Error(`Slide "${obj.id}": columns must be 1, 2, or 3`);
+		if (obj.columns !== 1 && obj.columns !== 2 && obj.columns !== 3 && obj.columns !== 4) {
+			throw new Error(`Slide "${obj.id}": columns must be 1, 2, 3, or 4`);
 		}
 	}
 

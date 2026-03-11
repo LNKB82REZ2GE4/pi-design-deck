@@ -507,6 +507,7 @@ async function generateMore(button, slideId, input, countSelect) {
 	const skeletons = [];
 	for (let i = 0; i < count; i++) {
 		const skeleton = createElement("div", "option-skeleton");
+		skeleton.innerHTML = '<div class="spinner"></div>';
 		optionsGrid.appendChild(skeleton);
 		skeletons.push(skeleton);
 	}
@@ -563,7 +564,7 @@ async function regenerateSlide(button, slideId) {
 	const prompt = input ? input.value.trim() : "";
 	if (input) input.value = "";
 
-	// Create skeleton overlay
+	// Create skeleton overlay with centered spinner
 	const optionCount = slide.options?.length || 2;
 	const colClass = optionsGrid.classList.contains("cols-3") ? "cols-3" :
 	                 optionsGrid.classList.contains("cols-1") ? "cols-1" : "cols-2";
@@ -571,8 +572,9 @@ async function regenerateSlide(button, slideId) {
 	for (let i = 0; i < optionCount; i++) {
 		overlay.appendChild(createElement("div", "regen-skeleton"));
 	}
-	const status = createElement("div", "regen-status", "Regenerating options...");
-	overlay.appendChild(status);
+	const center = createElement("div", "regen-center");
+	center.innerHTML = '<div class="spinner"></div><div class="regen-center-text">Regenerating options...</div>';
+	overlay.appendChild(center);
 
 	// Position overlay relative to options grid
 	optionsGrid.style.position = "relative";
@@ -670,6 +672,7 @@ function hideLoadingOverlay() {
 
 function init() {
 	initTheme();
+	initLayoutToggle();
 	setMetaLabel();
 	renderSlides();
 	restoreSelections();

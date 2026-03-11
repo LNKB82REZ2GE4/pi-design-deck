@@ -227,6 +227,78 @@ function initTheme() {
 	}
 }
 
+// ─── LAYOUT TOGGLE ───────────────────────────────────────────
+
+const LAYOUT_KEY = "pi-deck-layout";
+
+function getStoredLayout() {
+	try {
+		const value = localStorage.getItem(LAYOUT_KEY);
+		return value === "1" || value === "2" || value === "3" || value === "4" ? value : null;
+	} catch { return null; }
+}
+
+function setStoredLayout(value) {
+	try {
+		if (!value) {
+			localStorage.removeItem(LAYOUT_KEY);
+		} else {
+			localStorage.setItem(LAYOUT_KEY, value);
+		}
+	} catch {}
+}
+
+function applyLayout(cols) {
+	const deck = document.querySelector(".deck");
+	if (!deck) return;
+	if (cols) {
+		deck.dataset.layout = cols;
+	} else {
+		delete deck.dataset.layout;
+	}
+}
+
+function updateLayoutButtons(activeCols) {
+	const toggle = document.getElementById("layout-toggle");
+	if (!toggle) return;
+	toggle.querySelectorAll(".layout-btn").forEach((btn) => {
+		const isActive = btn.dataset.cols === activeCols;
+		btn.classList.toggle("active", isActive);
+		btn.setAttribute("aria-pressed", isActive ? "true" : "false");
+		// Update title to show "Auto" hint when clicking would reset
+		const cols = btn.dataset.cols;
+		btn.title = isActive ? `${cols} column${cols === "1" ? "" : "s"} (click for auto)` : `${cols} column${cols === "1" ? "" : "s"}`;
+	});
+}
+
+function initLayoutToggle() {
+	const stored = getStoredLayout();
+	if (stored) {
+		applyLayout(stored);
+		updateLayoutButtons(stored);
+	}
+
+	const toggle = document.getElementById("layout-toggle");
+	if (!toggle) return;
+
+	toggle.addEventListener("click", (event) => {
+		const btn = event.target.closest(".layout-btn");
+		if (!btn) return;
+		const cols = btn.dataset.cols;
+		const current = getStoredLayout();
+		if (cols === current) {
+			// Clicking active button toggles back to auto
+			setStoredLayout(null);
+			applyLayout(null);
+			updateLayoutButtons(null);
+		} else {
+			setStoredLayout(cols);
+			applyLayout(cols);
+			updateLayoutButtons(cols);
+		}
+	});
+}
+
 // ─── SELECTION PERSISTENCE ────────────────────────────────────
 
 const SELECTIONS_KEY = `pi-deck-${typeof deckData.sessionId === "string" ? deckData.sessionId : "unknown"}`;

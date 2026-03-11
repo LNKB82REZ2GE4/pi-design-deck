@@ -157,7 +157,7 @@ function escapeHtml(value: string): string {
 		.replace(/"/g, "&quot;");
 }
 
-function optionCountClass(count: number, columns?: 1 | 2 | 3): string {
+function optionCountClass(count: number, columns?: 1 | 2 | 3 | 4): string {
 	if (columns === 1) return "cols-1";
 	if (columns && count >= columns && count % columns !== 1) {
 		return `cols-${columns}`;

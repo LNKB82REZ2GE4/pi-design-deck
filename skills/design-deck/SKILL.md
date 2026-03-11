@@ -44,7 +44,7 @@ Build 1 decision per slide.
 
 Provide 2-4 options per slide that are genuinely distinct in direction, not tiny variants.
 
-Each slide supports an optional `columns` property (1, 2, or 3) to override the auto-detected grid. **Omit `columns` by default** — the auto-layout picks 2 or 3 columns based on option count, which is correct for most content. Only override to `columns: 1` when options contain wide architecture diagrams or detailed code that genuinely needs full viewport width. Never use `columns: 1` for text comparisons or simple previews.
+Each slide supports an optional `columns` property (1, 2, 3, or 4) to override the auto-detected grid. **Omit `columns` by default** — the auto-layout picks 2 or 3 columns based on option count, which is correct for most content. Only override to `columns: 1` when options contain wide architecture diagrams or detailed code that genuinely needs full viewport width. Use `columns: 4` when presenting many small, comparable items (e.g., icon sets, color swatches).
 
 Each slide supports an optional `context` property — a string displayed below the title that frames the decision for the user.
 

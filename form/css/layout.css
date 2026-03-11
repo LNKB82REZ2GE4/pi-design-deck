@@ -148,9 +148,16 @@ body {
    ───────────────────────────────────────────────────────────── */
 
 .options { display: grid; column-gap: 20px; row-gap: 0; counter-reset: opt; }
+.options.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .options.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .options.cols-2 { grid-template-columns: repeat(2, 1fr); }
 .options.cols-1 { grid-template-columns: 1fr; }
+
+/* Layout override - global toggle overrides per-slide classes */
+.deck[data-layout="1"] .options { grid-template-columns: 1fr; }
+.deck[data-layout="2"] .options { grid-template-columns: repeat(2, 1fr); }
+.deck[data-layout="3"] .options { grid-template-columns: repeat(3, 1fr); }
+.deck[data-layout="4"] .options { grid-template-columns: repeat(4, 1fr); }
 
 .option {
   border: 2px solid rgba(var(--dk-ink),0.12);

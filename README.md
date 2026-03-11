@@ -96,7 +96,7 @@ The browser opens, the user picks "JWT + Refresh Tokens", and the agent receives
 - **Generate-more loop**: Users click "Generate another option" and the agent pushes a new option into the live deck via SSE. No page reload.
 - **Model selector**: Dropdown to pick which model generates new options. Save as default, or override per-request.
 - **Thinking level**: Adjust reasoning effort for option generation when the selected model supports it.
-- **Slide columns**: `columns` property (1, 2, or 3) per slide. Auto-detected from option count if omitted.
+- **Slide columns**: `columns` property (1, 2, 3, or 4) per slide. Auto-detected from option count if omitted.
 - **Smart rebalancing**: Grid layout recalculates after generate-more adds options to minimize orphans.
 - **Option aside**: Explanatory text rendered below the preview. Supports `\n` for line breaks.
 - **Save/load snapshots**: `Cmd+S` saves the deck to disk. Use `action: "list"` to enumerate saved decks, `action: "open"` to reopen one by deck ID, or pass a file path to `slides`.
@@ -156,7 +156,7 @@ Image blocks reference absolute file paths. The server copies each file into a t
 
 ### Columns
 
-Each slide supports `columns: 1 | 2 | 3` to control the grid layout. Omit it and the deck auto-detects based on option count. Use `columns: 1` for wide architecture diagrams, `columns: 2` for side-by-side comparisons.
+Each slide supports `columns: 1 | 2 | 3 | 4` to control the grid layout. Omit it and the deck auto-detects based on option count. Use `columns: 1` for wide architecture diagrams, `columns: 2` for side-by-side comparisons, `columns: 4` for many small items.
 
 ### Aside
 
