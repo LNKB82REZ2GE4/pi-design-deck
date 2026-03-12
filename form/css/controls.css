@@ -221,9 +221,8 @@
 /* Spinner inside skeleton cards */
 .option-skeleton .spinner {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  inset: 0;
+  margin: auto;
   z-index: 2;
 }
 

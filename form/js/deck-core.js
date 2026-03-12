@@ -285,8 +285,8 @@ function initLayoutToggle() {
 		const btn = event.target.closest(".layout-btn");
 		if (!btn) return;
 		const cols = btn.dataset.cols;
-		const current = getStoredLayout();
-		if (cols === current) {
+		const stored = getStoredLayout();
+		if (cols === stored) {
 			// Clicking active button toggles back to auto
 			setStoredLayout(null);
 			applyLayout(null);

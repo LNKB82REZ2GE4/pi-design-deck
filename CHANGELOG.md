@@ -1,5 +1,11 @@
 # Changelog
 
+## [0.3.2] - 2026-03-11
+
+### Fixed
+- **Skeleton spinner centering**: Spinners in generate-more skeleton cards drifted off-center because the `@keyframes spin` animation overwrote the `transform: translate(-50%, -50%)` used for centering. Replaced with `inset: 0; margin: auto;` which avoids the transform conflict entirely.
+- **Variable shadowing**: Renamed two `const current` locals in the frontend JS that shadowed the global slide-index variable — `stored` in the layout toggle handler, `entry` in the generate-more timeout callback.
+
 ## [0.3.1] - 2026-03-10
 
 ### Added

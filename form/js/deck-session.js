@@ -403,10 +403,10 @@ function connectEvents() {
 				// Reset timeout for next option
 				if (pending.timeoutId) clearTimeout(pending.timeoutId);
 				pending.timeoutId = setTimeout(() => {
-					const current = pendingGenerate.get(payload.slideId);
-					if (!current || current.isRegen) return;
-					const received = current.receivedCount || 0;
-					const expected = current.expectedCount || 1;
+					const entry = pendingGenerate.get(payload.slideId);
+					if (!entry || entry.isRegen) return;
+					const received = entry.receivedCount || 0;
+					const expected = entry.expectedCount || 1;
 					restoreGenerateButton(payload.slideId);
 					if (received < expected) {
 						showSaveToast(`Generated ${received} of ${expected} options`, true);
