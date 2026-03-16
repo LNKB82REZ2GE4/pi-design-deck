@@ -4,7 +4,7 @@
 
 # Design Deck
 
-A tool for [Pi coding agent](https://github.com/badlogic/pi-mono/) that presents multi-slide visual decision decks in the browser. Each slide shows 2-4 high-fidelity previews — code diffs, architecture diagrams, UI mockups — and you pick one per slide. The agent gets back a clean selection map and moves on to implementation.
+A tool for [Pi coding agent](https://github.com/badlogic/pi-mono/) that presents multi-slide visual decision decks. On macOS, uses [Glimpse](https://github.com/nicobailon/glimpseui) to render in a native WKWebView window; falls back to a browser tab on other platforms. Each slide shows 2-4 high-fidelity previews — code diffs, architecture diagrams, UI mockups — and you pick one per slide. The agent gets back a clean selection map and moves on to implementation.
 
 <img width="1340" alt="Design Deck screenshot" src="https://github.com/user-attachments/assets/20864ac6-9223-4e2e-ba3c-db3eaae0abd8" />
 
@@ -41,7 +41,7 @@ Restart pi to load the extension and the bundled `design-deck` skill.
 
 **Requirements:**
 - pi-agent v0.35.0 or later (extensions API)
-- Optional on macOS: `glimpseui` for native window launch (`npm install -g glimpseui`)
+- For native macOS window: `pi install npm:glimpseui` (optional, falls back to browser if not installed)
 
 https://github.com/user-attachments/assets/aff1bac6-8bc2-461a-8828-f588ce655f7f
 
