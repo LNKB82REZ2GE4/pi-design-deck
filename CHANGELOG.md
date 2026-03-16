@@ -1,5 +1,10 @@
 # Changelog
 
+## [0.3.4] - 2026-03-16
+
+### Fixed
+- **Auto-correct misrouted action params**: When the agent passes `action`/`deckId` inside the `slides` JSON string instead of as top-level parameters, the tool now detects and promotes them automatically instead of failing with a validation error.
+
 ## [0.3.3] - 2026-03-15
 
 ### Added

@@ -416,6 +416,16 @@ export default function (pi: ExtensionAPI) {
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
 			const p = params as Record<string, unknown>;
 
+			if (!p.action && typeof p.slides === "string") {
+				try {
+					const parsed = JSON.parse(p.slides);
+					if (parsed && typeof parsed === "object" && !Array.isArray(parsed) && typeof parsed.action === "string") {
+						Object.assign(p, parsed);
+						delete p.slides;
+					}
+				} catch {}
+			}
+
 			if (!ctx.hasUI && p.action !== "list" && p.action !== "export") {
 				throw new Error(
 					"design_deck requires interactive mode with browser support. " +
