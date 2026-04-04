@@ -1,5 +1,12 @@
 # Changelog
 
+## [Unreleased]
+
+## [0.3.5] - 2026-04-04
+
+### Changed
+- Added `promptSnippet` metadata for `design_deck` and `deck_generate` so current pi versions consistently include both tools in the default model-visible tool prompt.
+
 ## [0.3.4] - 2026-03-16
 
 ### Fixed

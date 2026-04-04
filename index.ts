@@ -411,6 +411,9 @@ export default function (pi: ExtensionAPI) {
 			"When the user requests more options, tool returns generate-more instructions — " +
 			'call design_deck with action:"add-options" to push all new options at once. ' +
 			"previewBlocks for code/architecture comparisons, previewHtml for custom UI mockups.",
+		promptSnippet:
+			"Use this to present architecture/UI/code choices visually. Start with {slides: <deck-json-string>} and wait for completion. " +
+			"If it returns generate-more instructions, call design_deck with action:\"add-options\" and slideId to push all new options.",
 		parameters: DeckParams,
 
 		async execute(_toolCallId, params, signal, onUpdate, ctx) {
@@ -1067,6 +1070,8 @@ export default function (pi: ExtensionAPI) {
 	pi.registerTool({
 		name: "deck_generate",
 		description: "Generate text using a specific model (for design deck option generation). Use this when the generate-more prompt specifies a model override.",
+		promptSnippet:
+			"Use when design_deck generate-more/regenerate asks for a specific model. Provide {model: \"provider/model-id\", task: \"prompt\"} and return the raw generated text.",
 		parameters: Type.Object({
 			model: Type.String({ description: "Full model ID in 'provider/model-id' format (e.g., 'anthropic/claude-haiku-4-5')" }),
 			task: Type.String({ description: "The generation task/prompt" }),
